@@ -8,9 +8,7 @@ output:
     keep_md: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+
 
 # Introduction
 
@@ -41,7 +39,8 @@ With the appropriate data analysis, this report is intended to answer four quest
 
 Let's start downloading the data from the link mentioned in the introduction, saving it to folder **data** (in the working directory), and unzipping to file **activity.csv**:
 
-```{r downloadzip}
+
+```r
 if (!dir.exists("data")){
     dir.create("data")
 }
@@ -54,13 +53,15 @@ if (!file.exists("./data/activity.csv")) {
 
 Now, let's read the file "activity.csv" and create the data frame **df**, that will have the variables **steps**, **date** and **interval**:
 
-```{r loadcsv}
+
+```r
 df <- read.csv("./data/activity.csv")
 ```
 
 Finally, let's use the function as.Date() to change the class of date into "Date":
 
-```{r changeclass}
+
+```r
 df <- read.csv("./data/activity.csv")
 df$date <- as.Date(df$date,"%Y-%m-%d")
 ```
@@ -69,13 +70,15 @@ df$date <- as.Date(df$date,"%Y-%m-%d")
 
 To answer this question we're going to ignore the missing values in the dataset. So, let's first subset **df** to create the data frame without "NA" values, **df_wna**:
 
-```{r ignorena}
+
+```r
 df_wna <- subset(df, !is.na(steps))
 ```
 
 Second, let's calculate the total number of steps taken per day, saving this information to the new data frame **daily_steps_df**:
 
-```{r dailystepsna}
+
+```r
 daily_steps <- with(df_wna,tapply(steps, date, sum))
 # create a data frame to plot with ggplot
 daily_steps_df <- data.frame(steps=daily_steps)
@@ -83,7 +86,8 @@ daily_steps_df <- data.frame(steps=daily_steps)
 
 Third, let's make a histogram of the total number of steps taken each day:
 
-```{r histona}
+
+```r
 library(ggplot2)
 ggplot(daily_steps_df, aes(x=steps)) +
     geom_histogram(bins=30, color="black", fill="#3333FF") +
@@ -94,14 +98,17 @@ ggplot(daily_steps_df, aes(x=steps)) +
     labs(x="Steps", y="Count")
 ```
 
+![plot of chunk histona](figure/histona-1.png)
+
 Finally, let's calculate the mean and median of the total number of steps taken each day:
 
-```{r memena}
+
+```r
 daily_mean <- mean(daily_steps_df$steps)
 daily_median <- median(daily_steps_df$steps)
 ```
 
-The mean is `r format(round(daily_mean), scientific=F)` steps and the median is `r format(round(daily_median), scientific=F)` steps.
+The mean is 10766 steps and the median is 10765 steps.
 
 ## What is the average daily activity pattern?
 
@@ -109,7 +116,8 @@ To answer this question, we're going to make a time series plot of the 5-minute 
 
 First, let's compute the average number of steps per 5-minute interval using the dataframe **df_wna**, and save this information to the new dataframe **ave_daily_steps_df**, that will contain the variables **steps** and **interval**:
 
-```{r avgna}
+
+```r
 ave_daily_steps <- with(df_wna, tapply(steps, interval, mean))
 # create a data frame to plot with ggplot
 ave_daily_steps_df <- data.frame(steps=ave_daily_steps, 
@@ -118,20 +126,23 @@ ave_daily_steps_df <- data.frame(steps=ave_daily_steps,
 
 Since the variable **interval** is not continuous, let's create the variable **continuous_interval** to be plot on the x-axis:
 
-```{r continuous}
+
+```r
 continuous_interval <- 0:(nrow(ave_daily_steps_df)-1)
 ```
 
 Now, let's prepare the tick mark locations and tick mark labels for the x-axis, such that the graph shows a mark every two hours starting at 0:00 and ending at 24:00:
 
-```{r ticks}
+
+```r
 tickmark_locations <- seq(0,nrow(ave_daily_steps_df),24)
 tickmark_labels <- tickmark_locations / 12 * 100
 ```
 
 Let's plot:
 
-```{r plotna}
+
+```r
 ggplot(data=ave_daily_steps_df, aes(x=continuous_interval, y=steps)) +
     geom_line(color="#3333FF") +
     scale_y_continuous(breaks=seq(0,225,25)) +
@@ -141,15 +152,18 @@ ggplot(data=ave_daily_steps_df, aes(x=continuous_interval, y=steps)) +
     scale_x_continuous(breaks=tickmark_locations, labels=tickmark_labels)
 ```
 
+![plot of chunk plotna](figure/plotna-1.png)
+
 Finally, to know which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps, we compute:
 
-```{r maxna}
+
+```r
 max_average <- subset(ave_daily_steps_df, steps==max(steps))
 max_average_steps <- max_average$steps[[1]]
 max_average_interval <- max_average$interval[[1]]
 ```
 
-The maximum number of steps, equals to `r format(round(max_average_steps), scientific=F)`, is reached at interval number `r max_average_interval` (i.e. from 08:35 to 08:40 AM).
+The maximum number of steps, equals to 206, is reached at interval number 835 (i.e. from 08:35 to 08:40 AM).
 
 ## Imputing missing values
 
@@ -157,17 +171,19 @@ In order to figure out what's different when imputing missing values, we're goin
 
 Let's begin calculating the total number of missing values in the dataset:
 
-```{r thenas}
+
+```r
 NA_number <- sum(is.na(df$steps))
 ```
 
-There are `r NA_number` rows with NAs.
+There are 2304 rows with NAs.
 
 As a strategy for filling in all of the missing values in the dataset, we're going to use the mean for that 5-minute interval. This information is contained in the dataset **ave_daily_step_df**.
 
 Now, let's create the new dataset **df_fill**,that is equal to the original dataset **df** but with the missing data filled in. It's important to highlight that we are using the function round() to get an integer value:
 
-```{r dffill}
+
+```r
 df_fill <- df[,c("date", "interval")]
 df_fill$steps <- apply(df[,c("steps","interval")], 1, function(x){
     if (!is.na(x[1])) x[1]
@@ -176,7 +192,8 @@ df_fill$steps <- apply(df[,c("steps","interval")], 1, function(x){
 
 Let's create the data frame **daily_steps_df_fill** that computes the total number of steps taken each day, and plot the histogram:
 
-```{r plotfill}
+
+```r
 daily_steps_fill <- with(df_fill,tapply(steps, date, sum))
 # create a data frame to plot with ggplot
 daily_steps_df_fill <- data.frame(steps=daily_steps_fill)
@@ -189,15 +206,18 @@ ggplot(daily_steps_df_fill, aes(x=steps)) +
     labs(x="Steps", y="Count")
 ```
 
+![plot of chunk plotfill](figure/plotfill-1.png)
+
 Now, let's calculate the mean and median of the total number of steps taken per day:
-```{r memefill}
+
+```r
 daily_mean_fill <- mean(daily_steps_df_fill$steps)
 daily_median_fill <- median(daily_steps_df_fill$steps)
 ```
 
-The mean is `r format(round(daily_mean_fill), scientific=F)` steps and the median is `r format(round(daily_median_fill), scientific=F)` steps. These values are quite similar to the values obtained by ignoring the missing values (mean=`r format(round(daily_mean), scientific=F)`, median=`r format(round(daily_median), scientific=F)`), because we use the mean of the 5-minute interval to impute the missing data.
+The mean is 10766 steps and the median is 10762 steps. These values are quite similar to the values obtained by ignoring the missing values (mean=10766, median=10765), because we use the mean of the 5-minute interval to impute the missing data.
 
-On the other hand, the change in the histogram is due rather to the increase in the number of days with valid observations, since we went from `r nrow(daily_steps_df)` days (without considering missing values) to `r nrow(daily_steps_df_fill)` days (with the filling in strategy)
+On the other hand, the change in the histogram is due rather to the increase in the number of days with valid observations, since we went from 53 days (without considering missing values) to 61 days (with the filling in strategy)
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
@@ -205,7 +225,8 @@ To answer this question, we're going to make a panel plot containing a time seri
 
 First, let's create a new factor variable, **week**, in the dataset **df_fill** with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day:
 
-```{r iswend}
+
+```r
 # set locale to default to get the days of the week in english
 x <- Sys.setlocale("LC_TIME","C")
 week_day <- sapply(df_fill$date,function(x){
@@ -216,7 +237,8 @@ df_fill$week <- factor(week_day, levels=c("weekend", "weekday"))
 
 Second, let's compute the average number of steps taken during each 5-minute interval, averaged across all weekday days or weekend days, using the dataframe **df_fill**, and saving this information to the new dataframe **week_step_df**, that will contain the variables **steps**, **interval** and **week**:
 
-```{r weekdfl}
+
+```r
 week_step <- with(df_fill, tapply(steps, list(week, interval), mean))
 library(reshape2)
 # create a data frame to plot with ggplot
@@ -226,7 +248,8 @@ week_step_df <- melt(week_step, measure.vars=1:ncol(week_step),
 
 Third, let's make a panel plot containing a time series plot:
 
-```{r plotweek}
+
+```r
 # create var. continuous_interval to be plot on the x-axis, because var. interval is not continuous
 continuous_interval <- rep(0:(nrow(ave_daily_steps_df)-1),each=2)
 # use both tick mark locations and tick mark labels for the x-axis
@@ -242,15 +265,24 @@ ggplot(data=week_step_df, aes(x=continuous_interval, y=steps)) +
     scale_x_continuous(breaks=tickmark_locations, labels=tickmark_labels)
 ```
 
+![plot of chunk plotweek](figure/plotweek-1.png)
+
 To know when the 5-minute interval, on average across all the days in the dataset, contains the maximum number of step, we compute:
 
-```{r maxstepsf}
+
+```r
 max_values <- subset(week_step_df,steps %in% with(week_step_df, tapply(steps,week,max)))
 max_values
 ```
 
-As we see in the graph, the 5-minute interval that contains the maximum number of steps, is reached during weekdays: from 08:35 to 08:40 a.m. we have a maximum value of `r format(round(max_values[1,3]), scientific=F)` steps.
-On weekends the maximum value is `r format(round(max_values[2,3]), scientific=F)` steps from 09:15 to 09:20 a.m.
+```
+##        week interval    steps
+## 208 weekday      835 230.3556
+## 223 weekend      915 166.6250
+```
+
+As we see in the graph, the 5-minute interval that contains the maximum number of steps, is reached during weekdays: from 08:35 to 08:40 a.m. we have a maximum value of 230 steps.
+On weekends the maximum value is 167 steps from 09:15 to 09:20 a.m.
 
 The different activity pattern on weekends could be due to the person who recorded the data, worked during weekdays.
 
